@@ -4,15 +4,27 @@ use poem::{
 
 #[handler]
 fn hello(Path(name): Path<String>) -> String {
-    format!("Hello {}!", name)
+  format!("Hello {}!", name)
 }
 
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
+  // Load environment variables from .env file
+  dotenv::dotenv().ok();
+
+  // Server address
+  let port = dotenv::var("PORT").unwrap();
+  let addr = format!("127.0.0.1:{}", port);
+
+  // Server
   let app = Route::new().at("/hello/:name", get(hello)).with(Tracing);
-  let server = Server::new(TcpListener::bind("127.0.0.1:3000"))
+  let server = Server::new(TcpListener::bind(addr))
     .name("rust-graphql-auth")
     .run(app);
-  println!("🚀 Server ready at http://localhost:3000");
+
+  // Server running
+  println!("🚀 Server ready at http://localhost:{}", port);
+
+  // Awaiting server to exit
   server.await
 }
