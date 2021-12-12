@@ -6,6 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+chrono = { version = "0.4", features = ["serde"] }
+diesel = { version = "1.4.8", features = ["chrono", "postgres", "r2d2"] }
 dotenv = "0.15.0"
 poem = "1.0"
 tokio = { version = "1.12.0", features = ["macros", "rt-multi-thread"] }
