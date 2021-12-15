@@ -1,7 +1,8 @@
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Queryable)]
+#[derive(Deserialize, Queryable, Serialize)]
 pub struct User {
     pub id: Uuid,
     pub username: String,

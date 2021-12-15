@@ -2,7 +2,6 @@
 extern crate diesel;
 
 use poem::{listener::TcpListener, middleware::AddData, EndpointExt, Route, Server};
-use poem_openapi::OpenApiService;
 
 mod auth;
 mod database;
@@ -19,16 +18,9 @@ async fn main() -> Result<(), std::io::Error> {
     // Database
     let pool = database::get_db_pool();
 
-    // Auth service
-    let auth_service_addr = format!("http://localhost:{}/auth", port);
-    let auth_service =
-        OpenApiService::new(auth::AuthApi, "Auth Service", "1.0").server(auth_service_addr);
-    let auth_ui = auth_service.swagger_ui();
-
     // Server
     let app = Route::new()
-        .nest("/auth", auth_service)
-        .nest("/", auth_ui)
+        .at("/auth/basic", auth::basic::basic_auth)
         .with(AddData::new(pool));
     let server = Server::new(TcpListener::bind(addr))
         .name("rust-graphql-auth")

@@ -1,3 +1,1 @@
-pub struct AuthApi;
-
-mod basic;
+pub mod basic;
