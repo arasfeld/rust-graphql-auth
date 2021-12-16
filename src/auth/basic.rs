@@ -1,33 +1,38 @@
+use actix_web::{web, HttpResponse};
 use bcrypt::verify;
 use diesel::prelude::*;
-use poem::{
-    handler,
-    http::StatusCode,
-    web::{Data, Json},
-    Error, Result,
-};
 use serde::Deserialize;
 
-use crate::database::{get_db_connection, models::User, schema::users, PgPool};
+use crate::database::{
+    get_db_connection,
+    models::{SlimUser, User},
+    schema::users,
+    Pool,
+};
+use crate::errors::ServiceError;
 
-#[derive(Deserialize)]
-struct BasicAuthInput {
-    username: String,
-    password: String,
+#[derive(Debug, Deserialize)]
+pub struct LoginInput {
+    pub username: String,
+    pub password: String,
 }
 
-#[handler]
-pub fn basic_auth(pool: Data<&PgPool>, req: Json<BasicAuthInput>) -> Result<Json<User>, Error> {
-    let conn = get_db_connection(&pool);
+pub async fn basic_auth(
+    pool: web::Data<&Pool>,
+    input: web::Json<LoginInput>,
+) -> Result<HttpResponse, ServiceError> {
+    let conn = &get_db_connection(&pool)?;
     let user = users::table
-        .filter(users::username.eq(&req.username))
-        .first::<User>(&conn)
+        .filter(users::username.eq(&input.username))
+        .first::<User>(conn)
         .unwrap();
 
-    let password_hash = user.password_hash.unwrap();
-    if verify(&req.password, &password_hash).unwrap() {
-        Ok(Json(user))
-    } else {
-        Err(Error::new(StatusCode::UNAUTHORIZED))
+    if let Some(password_hash) = &user.password_hash {
+        if let Ok(_matching) = verify(&input.password, &password_hash) {
+            let slim_user: SlimUser = user.into();
+            return Ok(HttpResponse::Ok().json(&slim_user));
+        }
     }
+
+    Err(ServiceError::Unauthorized)
 }

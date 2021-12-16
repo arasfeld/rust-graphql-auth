@@ -1,33 +1,28 @@
 #[macro_use]
 extern crate diesel;
 
-use poem::{listener::TcpListener, middleware::AddData, EndpointExt, Route, Server};
+use actix_web::{App, HttpServer};
 
 mod auth;
 mod database;
+mod errors;
 
-#[tokio::main]
-async fn main() -> Result<(), std::io::Error> {
+#[actix_web::main]
+async fn main() -> std::io::Result<()> {
     // Load environment variables from .env file
     dotenv::dotenv().ok();
-
-    // Server address
-    let port = dotenv::var("PORT").unwrap();
-    let addr = format!("127.0.0.1:{}", port);
 
     // Database
     let pool = database::get_db_pool();
 
     // Server
-    let app = Route::new()
-        .at("/auth/basic", auth::basic::basic_auth)
-        .with(AddData::new(pool));
-    let server = Server::new(TcpListener::bind(addr))
-        .name("rust-graphql-auth")
-        .run(app);
+    let server = HttpServer::new(move || App::new().data(pool.clone()).configure(auth::routes))
+        .bind("0.0.0.0:3000")
+        .unwrap()
+        .run();
 
     // Server running
-    println!("🚀 Server ready at http://localhost:{}", port);
+    println!("🚀 Server ready at http://localhost:3000");
 
     // Awaiting server to exit
     server.await

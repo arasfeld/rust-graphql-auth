@@ -11,3 +11,20 @@ pub struct User {
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
+
+#[derive(Deserialize, Serialize)]
+pub struct SlimUser {
+    pub id: Uuid,
+    pub username: String,
+    pub email: String,
+}
+
+impl From<User> for SlimUser {
+    fn from(user: User) -> Self {
+        SlimUser {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+        }
+    }
+}
