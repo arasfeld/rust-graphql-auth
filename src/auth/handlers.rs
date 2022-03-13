@@ -17,7 +17,7 @@ pub struct LoginInput {
     pub password: String,
 }
 
-pub async fn basic_auth(
+pub async fn login(
     pool: web::Data<&Pool>,
     input: web::Json<LoginInput>,
 ) -> Result<HttpResponse, ServiceError> {

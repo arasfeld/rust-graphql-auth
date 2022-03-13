@@ -18,5 +18,5 @@ pub fn get_db_pool() -> Pool {
 }
 
 pub fn get_db_connection(pool: &Pool) -> Result<PooledConnection, ServiceError> {
-    Ok(pool.get().map_err(|_| ServiceError::UnableToConnectToDb)?)
+    Ok(pool.get().map_err(|_| ServiceError::InternalServerError)?)
 }

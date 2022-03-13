@@ -1,11 +1,10 @@
 use actix_web::web;
 
-mod basic;
+mod handlers;
 mod utils;
 
 pub fn routes(cfg: &mut web::ServiceConfig) {
     cfg.service(
-        web::scope("/auth")
-            .service(web::resource("/basic").route(web::post().to(basic::basic_auth))),
+        web::scope("/auth").service(web::resource("/login").route(web::post().to(handlers::login))),
     );
 }
