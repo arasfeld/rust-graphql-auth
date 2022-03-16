@@ -2,7 +2,7 @@ use actix_web::{web, HttpResponse};
 use diesel::prelude::*;
 use serde::Deserialize;
 
-use crate::auth::utils::verify_password;
+use crate::auth::utils::{hash_password, verify_password};
 use crate::database::{
     get_db_connection,
     models::{SlimUser, User},
@@ -35,4 +35,29 @@ pub async fn login(
     }
 
     Err(ServiceError::Unauthorized)
+}
+
+#[derive(Debug, Deserialize)]
+pub struct RegisterInput {
+    pub username: String,
+    pub email: String,
+    pub password: String,
+}
+
+pub async fn register(
+    pool: web::Data<&Pool>,
+    input: web::Json<RegisterInput>,
+) -> Result<HttpResponse, ServiceError> {
+    let conn = &get_db_connection(&pool)?;
+    let password_hash = hash_password(&input.password);
+    let user = diesel::insert_into(users::table)
+        .values((
+            users::email.eq(&input.email),
+            users::username.eq(&input.username),
+            users::password_hash.eq(password_hash),
+        ))
+        .get_result::<User>(conn)?;
+    let slim_user: SlimUser = user.into();
+
+    Ok(HttpResponse::Ok().json(&slim_user))
 }
