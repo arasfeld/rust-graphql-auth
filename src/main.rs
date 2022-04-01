@@ -1,34 +1,26 @@
-#[macro_use]
-extern crate diesel;
+use axum::{extract::Extension, Router};
+use std::net::SocketAddr;
 
-use actix_web::{middleware, web, App, HttpServer};
+use rust_graphql_auth::{auth, database};
 
-mod auth;
-mod database;
-mod errors;
-
-#[actix_web::main]
-async fn main() -> std::io::Result<()> {
+#[tokio::main]
+async fn main() {
     // Load environment variables from .env file
     dotenv::dotenv().ok();
 
     // Database
-    let pool = database::get_db_pool();
+    let pool = database::get_db_pool().await;
+
+    // App
+    let app = Router::new()
+        .nest("/auth", auth::router())
+        .layer(Extension(pool));
 
     // Server
-    let server = HttpServer::new(move || {
-        App::new()
-            .app_data(web::Data::new(pool.clone()))
-            .wrap(middleware::Logger::default())
-            .configure(auth::routes)
-    })
-    .bind("0.0.0.0:3000")
-    .unwrap()
-    .run();
-
-    // Server running
-    println!("🚀 Server ready at http://localhost:3000");
-
-    // Awaiting server to exit
-    server.await
+    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    println!("🚀 Server ready at {}", addr);
+    axum::Server::bind(&addr)
+        .serve(app.into_make_service())
+        .await
+        .unwrap();
 }

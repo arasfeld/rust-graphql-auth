@@ -1,12 +1,13 @@
-use actix_web::web;
+use axum::{routing::post, Router};
 
+mod errors;
 mod handlers;
+mod model;
+mod service;
 mod utils;
 
-pub fn routes(cfg: &mut web::ServiceConfig) {
-    cfg.service(
-        web::scope("/auth")
-            .service(web::resource("/login").route(web::post().to(handlers::login)))
-            .service(web::resource("/register").route(web::post().to(handlers::register))),
-    );
+pub fn router() -> Router {
+    Router::new()
+        .route("/login", post(handlers::login))
+        .route("/register", post(handlers::register))
 }
