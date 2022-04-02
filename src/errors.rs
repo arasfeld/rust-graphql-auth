@@ -5,7 +5,7 @@ use axum::{
 use thiserror::Error;
 
 #[derive(Debug, Error)]
-pub enum Error {
+pub enum ApiError {
     #[error("Access denied")]
     AccessDenied,
 
@@ -19,7 +19,7 @@ pub enum Error {
     Sqlx(#[from] sqlx::Error),
 }
 
-impl IntoResponse for Error {
+impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
         let status_code = match self {
             Self::AccessDenied => StatusCode::UNAUTHORIZED,

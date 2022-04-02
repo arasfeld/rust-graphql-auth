@@ -1,7 +1,10 @@
-use axum::{extract::Extension, Router};
+use axum::{extract::Extension, routing::post, Router};
 use std::net::SocketAddr;
 
-use rust_graphql_auth::{auth, database};
+use rust_graphql_auth::{
+    database,
+    handlers::{log_in, register}
+};
 
 #[tokio::main]
 async fn main() {
@@ -13,7 +16,8 @@ async fn main() {
 
     // App
     let app = Router::new()
-        .nest("/auth", auth::router())
+        .route("/login", post(log_in))
+        .route("/register", post(register))
         .layer(Extension(pool));
 
     // Server

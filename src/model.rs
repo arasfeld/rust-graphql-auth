@@ -15,7 +15,6 @@ pub struct RegisterInput {
     pub password: String,
 }
 
-
 #[derive(Deserialize, Serialize)]
 pub struct User {
     pub id: Uuid,

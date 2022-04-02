@@ -1,15 +1,13 @@
 use sqlx::PgPool;
 
-use crate::auth::{
-    errors::Error,
-    model::{LoginInput, RegisterInput, SlimUser},
-    utils::{hash_password, verify_password},
-};
+use crate::errors::ApiError;
+use crate::model::{LoginInput, RegisterInput, SlimUser};
+use crate::utils::{hash_password, verify_password};
 
 pub struct AuthService;
 
 impl AuthService {
-    pub async fn log_in(input: LoginInput, pool: &PgPool) -> Result<SlimUser, Error> {
+    pub async fn log_in(input: LoginInput, pool: &PgPool) -> Result<SlimUser, ApiError> {
         let user = sqlx::query!(
             r#"select id, username, email, password_hash from users where username = $1"#,
             input.username
@@ -17,20 +15,20 @@ impl AuthService {
         .fetch_one(pool)
         .await?;
 
-        let password_hash = &user.password_hash.ok_or(Error::InvalidUserPassword)?;
+        let password_hash = &user.password_hash.ok_or(ApiError::AccessDenied)?;
 
-            if verify_password(password_hash, &input.password) {
-                return Ok(SlimUser {
-                    id: user.id,
-                    username: user.username,
-                    email: user.email,
-                });
+        if verify_password(password_hash, &input.password) {
+            return Ok(SlimUser {
+                id: user.id,
+                username: user.username,
+                email: user.email,
+            });
         }
 
-        Err(Error::AccessDenied)
+        Err(ApiError::AccessDenied)
     }
 
-    pub async fn register(input: RegisterInput, pool: &PgPool) -> Result<SlimUser, Error> {
+    pub async fn register(input: RegisterInput, pool: &PgPool) -> Result<SlimUser, ApiError> {
         let password_hash = hash_password(&input.password);
         let user_id = sqlx::query_scalar(
             r#"
