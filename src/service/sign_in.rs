@@ -1,15 +1,8 @@
-use serde::Deserialize;
 use sqlx::PgPool;
 
 use crate::errors::ApiError;
-use crate::model::User;
+use crate::model::{SignInInput, User};
 use crate::utils::encryption::verify_password;
-
-#[derive(Debug, Deserialize)]
-pub struct SignInInput {
-    pub username: String,
-    pub password: String,
-}
 
 pub async fn sign_in(input: SignInInput, pool: &PgPool) -> Result<User, ApiError> {
     let user = sqlx::query!(

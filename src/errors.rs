@@ -22,6 +22,9 @@ pub enum ApiError {
     JwtError(#[from] jsonwebtoken::errors::Error),
 
     #[error(transparent)]
+    AxumTypedHeaderError(#[from] axum::extract::rejection::TypedHeaderRejection),
+
+    #[error(transparent)]
     AxumExtensionError(#[from] axum::extract::rejection::ExtensionRejection),
 }
 

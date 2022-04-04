@@ -1,9 +1,11 @@
-use axum::{extract::Extension, routing::post, Router};
+use async_graphql::{EmptySubscription, Schema};
+use axum::{extract::Extension, routing::{get, post}, Router};
 use std::net::SocketAddr;
 
 use rust_graphql_auth::{
     database,
-    handlers::{register, sign_in}
+    graphql::{AppSchema, MutationRoot, QueryRoot},
+    handlers
 };
 
 #[tokio::main]
@@ -12,13 +14,23 @@ async fn main() {
     dotenv::dotenv().ok();
 
     // Database
-    let pool = database::get_db_pool().await;
+    let pg_pool = database::get_db_pool().await;
+
+    // GraphQL
+    let schema: AppSchema = Schema::build(QueryRoot, MutationRoot, EmptySubscription)
+        .data(pg_pool.to_owned())
+        .finish();
 
     // App
     let app = Router::new()
-        .route("/register", post(register))
-        .route("/sign_in", post(sign_in))
-        .layer(Extension(pool));
+        .route("/register", post(handlers::register))
+        .route("/sign_in", post(handlers::sign_in))
+        .route(
+            "/graphql",
+            get(handlers::graphql_playground).post(handlers::graphql),
+        )
+        .layer(Extension(pg_pool))
+        .layer(Extension(schema));
 
     // Server
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
