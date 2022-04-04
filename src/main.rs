@@ -3,7 +3,7 @@ use std::net::SocketAddr;
 
 use rust_graphql_auth::{
     database,
-    handlers::{log_in, register}
+    handlers::{register, sign_in}
 };
 
 #[tokio::main]
@@ -16,8 +16,8 @@ async fn main() {
 
     // App
     let app = Router::new()
-        .route("/login", post(log_in))
         .route("/register", post(register))
+        .route("/sign_in", post(sign_in))
         .layer(Extension(pool));
 
     // Server

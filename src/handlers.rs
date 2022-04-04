@@ -1,26 +1,37 @@
 use axum::{extract::Extension, Json};
 use sqlx::postgres::PgPool;
 
-use crate::errors::ApiError;
-use crate::model::{LoginInput, RegisterInput, SlimUser};
-use crate::service::AuthService;
+use crate::{
+    errors::ApiError,
+    model::AuthPayload,
+    service,
+    utils::jwt::sign,
+};
 
-pub async fn log_in(
-    Json(input): Json<LoginInput>,
+pub async fn sign_in(
+    Json(input): Json<service::SignInInput>,
     Extension(pool): Extension<PgPool>,
-) -> Result<Json<SlimUser>, ApiError> {
-    let user = AuthService::log_in(input, &pool)
+) -> Result<Json<AuthPayload>, ApiError> {
+    let user = service::sign_in(input, &pool)
         .await
         .map_err(|_| ApiError::AccessDenied)?;
-    Ok(Json(user))
+    let token = sign(user.id)?;
+    Ok(Json(AuthPayload {
+        token: token,
+        user: user,
+    }))
 }
 
 pub async fn register(
-    Json(input): Json<RegisterInput>,
+    Json(input): Json<service::RegisterInput>,
     Extension(pool): Extension<PgPool>,
-) -> Result<Json<SlimUser>, ApiError> {
-    let user = AuthService::register(input, &pool)
+) -> Result<Json<AuthPayload>, ApiError> {
+    let user = service::register(input, &pool)
         .await
         .map_err(|_| ApiError::AccessDenied)?;
-    Ok(Json(user))
+    let token = sign(user.id)?;
+    Ok(Json(AuthPayload {
+        token: token,
+        user: user,
+    }))
 }

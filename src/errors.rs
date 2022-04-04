@@ -15,8 +15,14 @@ pub enum ApiError {
     #[error("Username taken")]
     UsernameTaken,
 
-    #[error("An error occurred with the database")]
+    #[error(transparent)]
     Sqlx(#[from] sqlx::Error),
+
+    #[error(transparent)]
+    JwtError(#[from] jsonwebtoken::errors::Error),
+
+    #[error(transparent)]
+    AxumExtensionError(#[from] axum::extract::rejection::ExtensionRejection),
 }
 
 impl IntoResponse for ApiError {
@@ -25,7 +31,7 @@ impl IntoResponse for ApiError {
             Self::AccessDenied => StatusCode::UNAUTHORIZED,
             Self::InvalidUserPassword => StatusCode::UNAUTHORIZED,
             Self::UsernameTaken => StatusCode::CONFLICT,
-            Self::Sqlx(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            _=> StatusCode::INTERNAL_SERVER_ERROR,
         };
         (status_code, self.to_string()).into_response()
     }
