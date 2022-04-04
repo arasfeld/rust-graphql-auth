@@ -1,6 +1,8 @@
 use async_graphql::{EmptySubscription, Schema};
 use axum::{extract::Extension, routing::{get, post}, Router};
 use std::net::SocketAddr;
+use tower::ServiceBuilder;
+use tower_http::trace::TraceLayer;
 
 use rust_graphql_auth::{
     database,
@@ -10,18 +12,25 @@ use rust_graphql_auth::{
 
 #[tokio::main]
 async fn main() {
-    // Load environment variables from .env file
     dotenv::dotenv().ok();
 
-    // Database
+    tracing_subscriber::fmt()
+        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+        .pretty()
+        .init();
+
     let pg_pool = database::get_db_pool().await;
 
-    // GraphQL
     let schema: AppSchema = Schema::build(QueryRoot, MutationRoot, EmptySubscription)
         .data(pg_pool.to_owned())
         .finish();
 
-    // App
+    let middleware_stack = ServiceBuilder::new()
+        .layer(TraceLayer::new_for_http())
+        .layer(Extension(schema))
+        .layer(Extension(pg_pool))
+        .into_inner();
+
     let app = Router::new()
         .route("/register", post(handlers::register))
         .route("/sign_in", post(handlers::sign_in))
@@ -29,10 +38,8 @@ async fn main() {
             "/graphql",
             get(handlers::graphql_playground).post(handlers::graphql),
         )
-        .layer(Extension(pg_pool))
-        .layer(Extension(schema));
+        .layer(middleware_stack);
 
-    // Server
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
     println!("🚀 Server ready at {}", addr);
     axum::Server::bind(&addr)
